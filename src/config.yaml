@@ -1,0 +1,4 @@
+port: ":8080" # Service Port
+auth_token: "4b6dbabba1ee5f2e5f3591201373164b" # openssl rand -hex 16
+db_url: "host=localhost user=give dbname=give sslmode=disable password=s4p3rs3cr3t" # database connection 
+
