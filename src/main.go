@@ -4,9 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/itsjamie/gin-cors"
 	"github.com/jinzhu/gorm"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-  "github.com/lib/pq"
 	"net/http"
 	"os"
 	"time"
@@ -28,17 +28,18 @@ type APIError struct {
 	Detail string `json:"detail"`
 }
 
-// APIError JSONAPI compatible error
+// Kid data
 type Kid struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	DateOfBirth   string   `json:"date_of_birth"`
+	ID            string         `json:"id"`
+	Name          string         `json:"name"`
+	DateOfBirth   string         `json:"date_of_birth"`
 	ParentsEmail  pq.StringArray `json:"parents_emails" gorm:"type:string[]"`
-	StudentsPhoto []byte   `json:"students_photo"`
-	SchoolName    string   `json:"school_name"`
-	IDTagName     string   `json:"id_tag_name"`
+	StudentsPhoto []byte         `json:"students_photo"`
+	SchoolName    string         `json:"school_name"`
+	IDTagName     string         `json:"id_tag_name"`
 }
 
+// Kids is a Collection of kids in JSON API standard
 type Kids struct {
 	Kids []Kid `json:"kids"`
 }
@@ -156,7 +157,7 @@ func CreateKids(c *gin.Context) {
 	c.JSON(http.StatusOK, Kids{Kids: kids})
 }
 
-// UpdateTrade log an update transaction into blockchain platform
+// UpdateKids updates data of a kid
 func UpdateKids(c *gin.Context) {
 	var kid Kid
 	c.BindJSON(&kid)
