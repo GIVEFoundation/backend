@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/itsjamie/gin-cors"
+  "github.com/gin-contrib/static"
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ const (
 	kidsCreationError = 100 << iota
 	uploadError       = 100 << iota
 	mainGroup         = "api/v1/give"
+  mediaURL          = "/media"
 )
 
 // APIError JSONAPI compatible error
@@ -48,7 +50,7 @@ type Kid struct {
 	Name          string         `json:"name"`
 	DateOfBirth   string         `json:"date_of_birth"`
 	ParentsEmail  pq.StringArray `json:"parents_emails" gorm:"type:string[]"`
-	StudentsPhoto []byte         `json:"students_photo"`
+	StudentsPhoto string         `json:"students_photo"`
 	SchoolName    string         `json:"school_name"`
 	IDTagName     string         `json:"id_tag_name"`
 }
@@ -131,6 +133,8 @@ func restEngine() *gin.Engine {
 		v1.PUT("/kids", UpdateKids)  // Update Kid data
     v1.POST("/upload", UploadFiles) // Upload photos, and other media files
 	}
+  // Serve uploaded media 
+  r.Use(static.Serve(mediaURL, static.LocalFile("./upload", true)))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -158,7 +162,8 @@ func UploadFiles(c *gin.Context) {
 	for _, file := range files {
     guid := xid.New()
 		outputFile := fmt.Sprintf("%s/%s_%s", outputDir,guid,file.Filename)
-	  uploaded = append(uploaded, UploadedFile{Filename: file.Filename ,URL: outputFile })
+	  uploaded = append(uploaded, UploadedFile{Filename: file.Filename ,
+                URL: fmt.Sprintf("%s/%s_%s",mediaURL,guid,file.Filename) })
 
 		if err := c.SaveUploadedFile(file, outputFile); err != nil {
 		  ae := APIError{Code: uploadError, Title: "Internal API error (upload) ", Detail: err.Error()}

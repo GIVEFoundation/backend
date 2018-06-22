@@ -19,5 +19,5 @@ get_libs:
 	go get github.com/stretchr/testify/assert
 
 clean: 
-	rm -f give_api give_api.log
+	rm -f give_api give_api.log upload/*
 
