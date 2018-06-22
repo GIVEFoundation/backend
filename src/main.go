@@ -7,8 +7,10 @@ import (
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+  "github.com/rs/xid"
 	"net/http"
 	"os"
+	"fmt"
 	"time"
 )
 
@@ -18,6 +20,7 @@ const (
 	chainError        = 100 << iota
 	dbConnectionError = 100 << iota
 	kidsCreationError = 100 << iota
+	uploadError       = 100 << iota
 	mainGroup         = "api/v1/give"
 )
 
@@ -26,6 +29,17 @@ type APIError struct {
 	Code   int    `json:"code"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
+}
+
+// Files holds uploaded files urls
+type UploadedFile struct {
+  Filename      string          `json:"filename"`
+  URL           string          `json:"url"`
+}
+
+// UploadedFiles set of uploaded files
+type UploadedFiles struct {
+  Files         []UploadedFile  `json:"files"`
 }
 
 // Kid data
@@ -115,6 +129,7 @@ func restEngine() *gin.Engine {
 	{
 		v1.POST("/kids", CreateKids) // New Kid on the block
 		v1.PUT("/kids", UpdateKids)  // Update Kid data
+    v1.POST("/upload", UploadFiles) // Upload photos, and other media files
 	}
 
 	r.GET("/ping", func(c *gin.Context) {
@@ -124,6 +139,35 @@ func restEngine() *gin.Engine {
 	})
 
 	return r
+}
+
+// UploadFiles upload files interface
+func UploadFiles(c *gin.Context) {
+	outputDir := viper.Get("output_dir").(string)
+	// Multipart form
+	form, err := c.MultipartForm()
+	if err != nil {
+		  ae := APIError{Code: uploadError, Title: "Internal API error (upload) ", Detail: err.Error()}
+		  c.JSON(http.StatusBadRequest, ae)
+		  return
+		return
+	}
+	files := form.File["files"]
+	// Should return an array to be JSON API compatible
+	var uploaded []UploadedFile
+	for _, file := range files {
+    guid := xid.New()
+		outputFile := fmt.Sprintf("%s/%s_%s", outputDir,guid,file.Filename)
+	  uploaded = append(uploaded, UploadedFile{Filename: file.Filename ,URL: outputFile })
+
+		if err := c.SaveUploadedFile(file, outputFile); err != nil {
+		  ae := APIError{Code: uploadError, Title: "Internal API error (upload) ", Detail: err.Error()}
+		  c.JSON(http.StatusBadRequest, ae)
+		  return
+		}
+	}
+
+	c.JSON(http.StatusOK, UploadedFiles{Files: uploaded})
 }
 
 // CreateKids register a kid using wallet address as ID
